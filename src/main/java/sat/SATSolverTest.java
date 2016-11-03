@@ -13,7 +13,10 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.EmptyStackException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,16 +38,18 @@ public class SATSolverTest {
     Literal na = a.getNegation();
     Literal nb = b.getNegation();
     Literal nc = c.getNegation();
+    static ImList<Literal> literalImList=new EmptyImList();
 
 
 
-	
-	// TODO: add the main method that reads the .cnf file and calls SATSolver.solve to determine the satisfiability
+
+    // TODO: add the main method that reads the .cnf file and calls SATSolver.solve to determine the satisfiability
     public static void main(String[] args) throws IOException {
-        String content=cut(readFile("/Users/chs/Downloads/sampleCNF/s8Sat.cnf"));
-
-
+        String content=cut(readFile("/Users/chs/Documents/SUTD/intro to info/Project-2D/Project-2D-starting/sampleCNF/largeUnsat.cnf"));
         String[] clause = content.split(" 0 ");
+//        for(String e:clause){
+//            System.out.println(e);
+//        }
         String[] literal;
         Formula fml=new Formula();
         Literal a;
@@ -53,7 +58,11 @@ public class SATSolverTest {
         for(int i=0;i<clause.length;i++) {
             Clause cls=new Clause();
             literal=clause[i].split(" ");
+//            for(String e:literal){
+//                System.out.println(e);
+//            }
             for(int j=0;j<literal.length;j++){
+                if(!literal[j].equals("")){
                 int numLiteral=Integer.parseInt(literal[j]);
                 String absLiteral=Integer.toString(Math.abs(numLiteral));
                 if(numLiteral>0){
@@ -61,14 +70,17 @@ public class SATSolverTest {
                 }else{
                     a=NegLiteral.make(absLiteral);
                 }
+                    if(!literalImList.contains(PosLiteral.make(absLiteral))){
+                    literalImList=literalImList.add(PosLiteral.make(absLiteral));}
                 cls=cls.add(a);
-              //  System.out.println(cls.toString());
+                //  System.out.println(cls.toString());
+                }
             }
             fml=fml.addClause(cls);
 
         }
         System.out.println("SAT solver starts");
-        long started=System.nanoTime();
+        long started=System.nanoTime();;
 
         Environment result=SATSolver.solve(fml);
 
@@ -79,12 +91,26 @@ public class SATSolverTest {
         if(result==null){
             System.out.println("not satisfiable");
         }else{
+            String timeLog = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+            PrintWriter out = new PrintWriter("12.txt","UTF-8");
+            out.println(timeLog);
+            for(Literal e:literalImList){
+                out.println(e.getVariable().getName()+":"+result.get(e.getVariable()).toString());
+            }
 
+            String resultStr=result.toString();
+            String [] resultArr= resultStr.split(",");
+//            for (String i: resultArr){
+//                i=i.replace("]","");
+//                i=i.replace("Environment:[","");
+//                i=i.replace("->",":");
+//                out.println(i);}
+            out.close();
             System.out.println("satisfiable");
             System.out.println(result.toString());
         }
 
-
+        //System.out.println(fml.toString());
 
 
 
@@ -103,8 +129,12 @@ public class SATSolverTest {
     }
 
 
+
+
+
+
     private static String cut(String whole){
-        Pattern p = Pattern.compile("(p\\scnf\\s)(\\d{1,}\\s\\d{1,})");
+        Pattern p = Pattern.compile("(p\\s+cnf\\s+)(\\d{1,}\\s+\\d{1,})");
         Matcher m = p.matcher(whole);
 
         while ( m.find() )  {
@@ -117,27 +147,27 @@ public class SATSolverTest {
 
 
 
-	
+
     public void testSATSolver1(){
-    	// (a v b)
-    	Environment e = SATSolver.solve(makeFm(makeCl(a,b))	);
+        // (a v b)
+        Environment e = SATSolver.solve(makeFm(makeCl(a,b))	);
 /*
     	assertTrue( "one of the literals should be set to true",
-    			Bool.TRUE == e.get(a.getVariable())  
+    			Bool.TRUE == e.get(a.getVariable())
     			|| Bool.TRUE == e.get(b.getVariable())	);
-    	
-*/    	
+
+*/
     }
-    
-    
+
+
     public void testSATSolver2(){
-    	// (~a)
-    	Environment e = SATSolver.solve(makeFm(makeCl(na)));
+        // (~a)
+        Environment e = SATSolver.solve(makeFm(makeCl(na)));
 /*
     	assertEquals( Bool.FALSE, e.get(na.getVariable()));
-*/    	
+*/
     }
-    
+
     private static Formula makeFm(Clause... e) {
         Formula f = new Formula();
         for (Clause c : e) {
@@ -145,7 +175,7 @@ public class SATSolverTest {
         }
         return f;
     }
-    
+
     private static Clause makeCl(Literal... e) {
         Clause c = new Clause();
         for (Literal l : e) {
@@ -153,7 +183,4 @@ public class SATSolverTest {
         }
         return c;
     }
-    
-    
-    
 }
