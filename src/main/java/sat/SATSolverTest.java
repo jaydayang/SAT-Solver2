@@ -6,8 +6,6 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 */
 
-import com.sun.corba.se.impl.orbutil.graph.Graph;
-import com.sun.tools.internal.xjc.outline.ClassOutline;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -38,15 +36,14 @@ public class SATSolverTest {
     Literal nb = b.getNegation();
     Literal nc = c.getNegation();
 
-    private static Graph G;
 
 
 	
 	// TODO: add the main method that reads the .cnf file and calls SATSolver.solve to determine the satisfiability
     public static void main(String[] args) throws IOException {
-        String content=cut(readFile("/Users/chs/Documents/SUTD/intro to info/Project-2D/Project-2D-starting/sampleCNF/largeUnsat.cnf"));
+        String content=cut(readFile("/Users/chs/Downloads/sampleCNF/s8Sat.cnf"));
 
-        //System.out.println(content);
+
         String[] clause = content.split(" 0 ");
         String[] literal;
         Formula fml=new Formula();
@@ -65,18 +62,29 @@ public class SATSolverTest {
                     a=NegLiteral.make(absLiteral);
                 }
                 cls=cls.add(a);
-               // System.out.println(cls.toString());
+              //  System.out.println(cls.toString());
             }
             fml=fml.addClause(cls);
 
         }
-        if(SATSolver.solve(fml)==null){
-            System.out.println("false");
+        System.out.println("SAT solver starts");
+        long started=System.nanoTime();
+
+        Environment result=SATSolver.solve(fml);
+
+        long time=System.nanoTime();
+        long timetaken=time-started;
+        System.out.println("Time:"+timetaken/1000000.0+"ms");
+
+        if(result==null){
+            System.out.println("not satisfiable");
         }else{
-            System.out.println("true");
+
+            System.out.println("satisfiable");
+            System.out.println(result.toString());
         }
 
-       //System.out.println(fml.toString());
+
 
 
 
@@ -91,18 +99,10 @@ public class SATSolverTest {
         while((line = bufferedReader.readLine())!=null){
             stringBuffer.append(line).append(" ");
         }
-        return stringBuffer.toString().substring(getV(stringBuffer.toString()));
+        return stringBuffer.toString();
     }
 
 
-
-
-    private static int getV (String cnfString) {
-        int indTmp = cnfString.indexOf('p');
-        return Character.getNumericValue(cnfString.charAt(indTmp + 6));
-        // "p\scnf\s(\d+)\s(\d+)" // Group(1): number of vars, Group(2):number of clauses
-        // +6:#vars, +8+trunc(lg_10 #vars):#clauses
-    }
     private static String cut(String whole){
         Pattern p = Pattern.compile("(p\\scnf\\s)(\\d{1,}\\s\\d{1,})");
         Matcher m = p.matcher(whole);

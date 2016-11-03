@@ -17,86 +17,94 @@ public class SATSolver {
      * unit propagation. The returned environment binds literals of class
      * bool.Variable rather than the special literals used in clausification of
      * class clausal.Literal, so that clients can more readily use it.
-     * 
+     *
      * @return an environment for which the problem evaluates to Bool.TRUE, or
-     *         null if no such environment exists.
+     * null if no such environment exists.
      */
-    public static Environment solve(Formula formula) {
-        Environment env=new Environment();
-        ImList<Clause> clsList = formula.getClauses();
-        Clause IndividualClause=new Clause();
-        IndividualClause = clsList.first();
-        for(int i=0;i<clsList.size();i++){
-            clsList=clsList.rest();
-            if(IndividualClause.size()>clsList.first().size()){
-                IndividualClause=clsList.first();
-            }
-        }
-        Literal a=IndividualClause.chooseLiteral();
-        if(IndividualClause.isUnit()){
-            env=env.putTrue(IndividualClause.chooseLiteral().getVariable());
-        }else {
-            env = env.putTrue(IndividualClause.chooseLiteral().getVariable());
-            if (solve(substitute(clsList,a),env) == null) {
-                env = env.putFalse(IndividualClause.chooseLiteral().getVariable());
-                a=a.getNegation();
-            }
-        }
-        return solve(substitute(clsList,a),env);
+    static Clause IndividualClause = null;
+    static Literal a;
 
-        // TODO: implement this.
+    public static Environment solve(Formula formula) {
+        Environment env = new Environment();
+        ImList<Clause> clsList = formula.getClauses();
+        System.out.println("solve" + env.toString());
+        System.out.println("solve1" + clsList.toString());
+        IndividualClause = clsList.first();
+        clsList = clsList.rest();
+        IndividualClause = clsList.first();
+        clsList = clsList.rest();
+        while (!clsList.isEmpty()) {
+            if (IndividualClause.size() > clsList.first().size()) {
+                IndividualClause = clsList.first();
+            }
+            clsList = clsList.rest();
+        }
+        a = IndividualClause.chooseLiteral();
+        System.out.println("chooseLiteral" + a.toString());
+        env = env.putTrue(IndividualClause.chooseLiteral().getVariable());
+
+        System.out.println("solve" + substitute(formula.getClauses(), a).toString());
+        return solve(substitute(formula.getClauses(), a), env);
     }
+
 
     /**
      * Takes a partial assignment of variables to values, and recursively
      * searches for a complete satisfying assignment.
-     * 
-     * @param clauses
-     *            formula in conjunctive normal form
-     * @param env
-     *            assignment of some or all variables in clauses to true or
-     *            false values.
+     *
+     * @param clauses formula in conjunctive normal form
+     * @param env     assignment of some or all variables in clauses to true or
+     *                false values.
      * @return an environment for which all the clauses evaluate to Bool.TRUE,
-     *         or null if no such environment exists.
+     * or null if no such environment exists.
      */
     private static Environment solve(ImList<Clause> clauses, Environment env) {
-        if(clauses==null){
+        System.out.println("solve2" + env.toString());
+        System.out.println("solve2" + clauses.toString());
+        ImList<Clause> newClauses = clauses;
+        if (clauses.isEmpty()) {
+            System.out.println("finish");
+            System.out.println("final env" + env.toString());
             return env;
-        }else if(SATSolver.ifEmpty(clauses)){
+        } else if (SATSolver.ifEmpty(clauses) && !IndividualClause.isUnit()) {
+            env = env.putFalse(IndividualClause.chooseLiteral().getVariable());
+            a = a.getNegation();
+            return solve(substitute(clauses, a), env);
+
+        } else if (SATSolver.ifEmpty(clauses) && IndividualClause.isUnit()) {
             return null;
-        }else {
-            Clause IndividualClause=new Clause();
-            IndividualClause = clauses.first();
-            for(int i=0;i<clauses.size();i++){
-                clauses=clauses.rest();
-                if(IndividualClause.size()>clauses.first().size()){
-                    IndividualClause=clauses.first();
+        } else {
+            IndividualClause = newClauses.first();
+            newClauses = newClauses.rest();
+            while (!newClauses.isEmpty()) {
+                if (IndividualClause.size() > newClauses.first().size()) {
+                    IndividualClause = newClauses.first();
                 }
+                newClauses = newClauses.rest();
             }
-            Literal a=IndividualClause.chooseLiteral();
-            if(IndividualClause.isUnit()){
-                env=env.putTrue(IndividualClause.chooseLiteral().getVariable());
-            }else {
-                env = env.putTrue(IndividualClause.chooseLiteral().getVariable());
-                if (solve(substitute(clauses,a),env) == null) {
-                    env = env.putFalse(IndividualClause.chooseLiteral().getVariable());
-                    a=a.getNegation();
-                }
-            }
-            return solve(substitute(clauses,a),env);
+            a = IndividualClause.chooseLiteral();
+            System.out.println("solve2choose" + a.toString());
+            env = env.putTrue(IndividualClause.chooseLiteral().getVariable());
+
+            System.out.println("substitute" + substitute(clauses, a));
+            return solve(substitute(clauses, a), env);
 
         }
-
-        // TODO: implement this.
-
     }
+
+
+
+
+
+
+
 
     public static boolean ifEmpty(ImList<Clause> clause){
         for(int i=0;i<clause.size();i++){
-            if (clause.first().isEmpty()){
+            if (clause.first().isEmpty()) {
                 return true;
-            }else{
-                clause=clause.rest();
+            } else {
+                clause = clause.rest();
             }
         }return false;
     }
@@ -117,25 +125,25 @@ public class SATSolver {
             Literal l) {
         ImList<Clause> clausesRest = new EmptyImList<>();
         while (!clauses.isEmpty()) {
-            if(clauses.first().contains(l)) {
-                clausesRest = clausesRest.add(clauses.first().reduce(l));
-            }else if(clauses.first().contains(l.getNegation())){
-                Clause x=new Clause();
-                for(Literal n:clauses.first()){
-                    if(!n.equals(l.getNegation())){
-                        x=x.add(n);
-                    }
+//            if(clauses.first()!=null) {
+                if (clauses.first().contains(l)) {
+                    if(clauses.first().reduce(l)!=null){
+                    clausesRest = clausesRest.add(clauses.first().reduce(l));}
                 }
-                clausesRest=clausesRest.add(x);
-            }else {
-                clausesRest=clausesRest.add(clauses.first());
-            }
+        else if (clauses.first().contains(l.getNegation())) {
+                    Clause x = new Clause();
+                    for (Literal n : clauses.first()) {
+                        if (!n.equals(l.getNegation())) {
+                            x = x.add(n);
+                        }
+                    }
+                    clausesRest = clausesRest.add(x);
+                } else {
+                    clausesRest = clausesRest.add(clauses.first());
+                }
             clauses=clauses.rest();
         }
         return clausesRest;
     }
-
-    // TODO: implement this.
-
-    }
+}
 
